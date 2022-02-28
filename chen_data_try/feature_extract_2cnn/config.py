@@ -1,5 +1,6 @@
 class DataConfig(object):
-    data_path = "/home/ubuntu/chen_data/chen_all_ch2"
+    # data_path = "/home/ubuntu/chen_data/chen_all_ch2"
+    data_path = "/home/ubuntu/RAIDS/dataset/chen_old"
     data_name = "hsv_gray_diff_ch2"  # hsv_gray_diff_ch4
     img_height = 66
     img_width =  200

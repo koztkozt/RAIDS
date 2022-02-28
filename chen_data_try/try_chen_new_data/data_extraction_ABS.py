@@ -59,7 +59,8 @@ class intrusion_data(Dataset):
         temp=[]
         for i,img_path in enumerate(image_path):
 
-            data = self.control_data.iloc[idx+(i*30),np.r_[6]].as_matrix()
+            # data = self.control_data.iloc[idx+(i*30),np.r_[6]].as_matrix()
+            data = self.control_data.iloc[idx+(i*30),np.r_[6]].to_numpy()
             data = data.astype('float').reshape(-1)
             anam = self.control_data.iloc[idx+(i*30),19]
 

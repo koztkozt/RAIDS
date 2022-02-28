@@ -25,6 +25,7 @@ from keras.models import load_model
 from keras.preprocessing.image import load_img, img_to_array
 from skimage.exposure import rescale_intensity
 
+import time
 
 class Model(object):
     def __init__(self,
@@ -73,8 +74,10 @@ class Model(object):
 
             return self.model.predict(X)[0]
 
-face_dataset = intrusion_data(csv_file='interpolated_2188to16447_attack_a_0p2_0p9_9982.csv',root_dir='/home/pi/new_try_raspberry_pi--/chen_data_try/chen_new_try/chen_new_data',cs=1,transform=transforms.Compose([transforms.Resize(256),transforms.RandomResizedCrop(224),transforms.ToTensor()]))
-test_dataset=intrusion_data(csv_file='interpolated_2188to16447_attack_a_0p2_0p9_4280.csv',root_dir='/home/pi/new_try_raspberry_pi--/chen_data_try/chen_new_try/chen_new_data',cs=1,transform=transforms.Compose([transforms.Resize(256),transforms.RandomResizedCrop(224),transforms.ToTensor()]))
+# face_dataset = intrusion_data(csv_file='interpolated_2188to16447_attack_a_0p2_0p9_9982.csv',root_dir='/home/pi/new_try_raspberry_pi--/chen_data_try/chen_new_try/chen_new_data',cs=1,transform=transforms.Compose([transforms.Resize(256),transforms.RandomResizedCrop(224),transforms.ToTensor()]))
+# test_dataset=intrusion_data(csv_file='interpolated_2188to16447_attack_a_0p2_0p9_4280.csv',root_dir='/home/pi/new_try_raspberry_pi--/chen_data_try/chen_new_try/chen_new_data',cs=1,transform=transforms.Compose([transforms.Resize(256),transforms.RandomResizedCrop(224),transforms.ToTensor()]))
+face_dataset = intrusion_data(csv_file='interpolated_2188to16447_attack_a_0p2_0p9_9982.csv',root_dir='/home/ubuntu/RAIDS/chen_data_try/try_chen_new_data/attack_csv/chen',cs=1,transform=transforms.Compose([transforms.Resize(256),transforms.RandomResizedCrop(224),transforms.ToTensor()]))
+test_dataset=intrusion_data(csv_file='interpolated_2188to16447_attack_a_0p2_0p9_4280.csv',root_dir='/home/ubuntu/RAIDS/chen_data_try/try_chen_new_data/attack_csv/chen',cs=1,transform=transforms.Compose([transforms.Resize(256),transforms.RandomResizedCrop(224),transforms.ToTensor()]))
 
 dataloader = DataLoader(face_dataset, batch_size=1, shuffle=False)
 test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
@@ -84,7 +87,8 @@ config = TestConfig()
 ch = config.num_channels
 row = config.img_height
 col = config.img_width
-model_org = create_comma_model_large_dropout(row, col, ch, load_weights=True)
+# model_org = create_comma_model_large_dropout(row, col, ch, load_weights=True)
+model_org = create_comma_model_large_dropout(row, col, ch, load_weights=False)
 
 model = Model(model_org,
               "data/X_train_gray_diff2_mean.npy")
@@ -124,6 +128,7 @@ for iter_x in range(epochs):
 
         data = []
         result = []
+        print('sample',sample)
         for sm in sample:
             imag, dat, res = sm
             data = dat
@@ -133,7 +138,6 @@ for iter_x in range(epochs):
             preds = model.predict(img)
             preds = preds.astype('float').reshape(-1)
             preds = preds[0]
-
         target = torch.stack(result)
         target = target.view(-1)
 

@@ -35,8 +35,11 @@ def launch_attack(csv_input):
         if val == 'NAN':
             return
         else:
-            csv_input.set_value(row, label[col], str(val + operation * rnd))
-            csv_input.set_value(row, label[num_cols - 1], '1')
+            # csv_input.set_value(row, label[col], str(val + operation * rnd))
+            # csv_input.set_value(row, label[num_cols - 1], '1')
+            csv_input.at[row, label[col]]           = str(val + operation * rnd)
+            csv_input.at[row, label[num_cols - 1]]  = '1'
+            
     return csv_input
 
 

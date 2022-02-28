@@ -1,0 +1,10 @@
+.vscode/
+*__pycache__/
+*.hdf5
+*.h5
+dataset/chen_old/data/
+dataset/chen_old/X_train_chen_old.npy
+chen_data_try.bak/
+chen_data_try/try_chen_new_data/attack_csv/chen/chen_new/center/
+chen_data_try.zip
+gdrive.sh
