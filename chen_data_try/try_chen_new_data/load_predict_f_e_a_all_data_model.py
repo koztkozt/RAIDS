@@ -12,10 +12,9 @@ import cv2
 import torch.optim as optim
 from data_extraction_ABS import *
 
-
-from model_abs_linear import *
 from torch.optim import lr_scheduler
 from torch.autograd import Variable
+from model_abs_linear import *
 
 import numpy as np
 from keras.models import load_model
@@ -85,11 +84,13 @@ class Model(object):
             X = X.astype('float32')
             X -= self.X_mean
             X /= 255.0
+
             return self.model.predict(X)[0]
 
-test_dataset=intrusion_data(csv_file='interpolated_2188to16447_a_directive_0p25_1_4280.csv',
-                            root_dir='/home/pi/new_try_raspberry_pi--/chen_data_try/chen_new_try/chen_new_data',
-                            cs=1,transform=transforms.Compose([transforms.Resize(256),transforms.RandomResizedCrop(224),transforms.ToTensor()]))
+
+test_dataset=intrusion_data(csv_file='interpolated_random_a_10702to24371_part1_0p2to0p9_4103.csv',root_dir='/home/pi/new_try_raspberry_pi--/chen_data_try/chen_old_try/chen_old_data',cs=1,
+                            transform=transforms.Compose([transforms.Resize(256),transforms.RandomResizedCrop(224),transforms.ToTensor()]))
+
 test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
 config = TestConfig()
@@ -116,7 +117,7 @@ def accuracy(act , out):
 
 
 net.eval()
-net = torch.load('saved_consecutive_models/epoch_2.pt')
+net = torch.load('saved_consecutive_models/epoch_38.pt')
 loss1 = 0
 finale = 0
 train_loss = 0
@@ -141,22 +142,50 @@ for i_batch, sample in enumerate(test_loader):
 
 
     for img in imag:
+        # print("load_one_image_start: ", strftime("%Y-%m-%d %H:%M:%S", gmtime()))
+        # time1 = strftime("%Y-%m-%d %H:%M:%S", gmtime())
         time1 = datetime.datetime.now()
+
         preds = model.predict(img)
+
         preds = preds.astype('float').reshape(-1)
         preds = preds[0]
+        # print("preds: ", preds)
+        # time2 = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+        # time2 = datetime.datetime.now()
+        # k = time2 - time1
+        #
+        # print("del_time1-time2: ", k, time1, time2)
+        # print("load_one_image_end: ", strftime("%Y-%m-%d %H:%M:%S", gmtime()))
+
     time_start = time1
     target = torch.stack(result)
     target = target.view(-1)
+    # final_vars = []
+    # for tens in data:
+    #     final_vars.append(Variable(tens))
+
     final_vars = torch.FloatTensor([[[abs(data - preds)]]])
+
+    # final_vars = torch.FloatTensor([[[data, preds]]]).cuda()
+    # print("preds_data_ibatch: ", preds, data, i_batch)
 
     x = net(*final_vars)
 
     values, indices = x.max(1)
+    # print("target_indices: ", target, indices.data)
+    # time3 = strftime("%Y-%m-%d %H:%M:%S", gmtime())
     time3 = datetime.datetime.now()
 
+    # print("detection_result: ", time3)
     k = time3-time_start
     print("input-output: ", k)
+    # k =int(k)
+    #
+    # if max_time < k :
+    #     max_time = k
+    # ave_time = ave_time +k
+
     loss1 += accuracy(target, indices.data)
     finale += 1
 
@@ -177,6 +206,12 @@ for i_batch, sample in enumerate(test_loader):
             target_0_indices_0 += 1
         elif Target == 0 and Indices == 1:
             target_0_indices_1 += 1
+
+    # if (i_batch > 1000):
+    #     break
+# print("max_time: ", max_time)
+# print("_all_time: ", ave_time)
+
 
 acc = 1.0 - (loss1 / finale)
 acc11 = target_1_indices_1 / (target_1_indices_1 + target_1_indices_0)

@@ -88,13 +88,28 @@ if __name__ == "__main__":
     # test_dataset=intrusion_data(csv_file='interpolated_random_a_10702to24371_part1_0p2to0p9_4103.csv',root_dir='/home/pi/new_try_raspberry_pi--/chen_data_try/chen_old_try/chen_old_data',cs=1,
     #                             transform=transforms.Compose([transforms.Resize(256),transforms.RandomResizedCrop(224),transforms.ToTensor()]))
     # importing the dataset csv with attacks
+    # dataset = pd.read_csv(
+    #     "/home/ubuntu/RAIDS/chen_data_try/try_chen_old_data/attack_csv/chen_old_all_abrupt_intrusion.csv"
+    # )
     dataset = pd.read_csv(
-        "/home/ubuntu/RAIDS/chen_data_try/try_chen_old_data/attack_csv/chen_old_all_abrupt_intrusion.csv"
+        "/home/ubuntu/RAIDS/chen_data_try/try_chen_old_data/attack_csv/chen_old_all_directed_intrusion.csv"
     )
     # split the dataset into training and test. needs to be in order cos the images are substracted
     face_dataset, test_dataset = train_test_split(dataset, test_size=0.3, shuffle=False, random_state=56)
-    face_dataset = intrusion_data(face_dataset, root_dir="/home/ubuntu/RAIDS/dataset/chen_old/data")
-    test_dataset = intrusion_data(test_dataset, root_dir="/home/ubuntu/RAIDS/dataset/chen_old/data")
+    face_dataset = intrusion_data(
+        face_dataset,
+        root_dir="/home/ubuntu/RAIDS/dataset/chen_old/data",
+        transform=transforms.Compose(
+            [transforms.Resize(256), transforms.RandomResizedCrop(224), transforms.ToTensor()]
+        ),
+    )
+    test_dataset = intrusion_data(
+        test_dataset,
+        root_dir="/home/ubuntu/RAIDS/dataset/chen_old/data",
+        transform=transforms.Compose(
+            [transforms.Resize(256), transforms.RandomResizedCrop(224), transforms.ToTensor()]
+        ),
+    )
 
     # It represents a Python iterable over a datase
     dataloader = DataLoader(face_dataset, batch_size=1, shuffle=False)
@@ -112,7 +127,7 @@ if __name__ == "__main__":
         col,
         ch,
         load_weights=True,
-        path="/home/ubuntu/RAIDS/chen_data_try/feature_extract_2cnn/Model_0.0137loss.h5",
+        path="/home/ubuntu/RAIDS/chen_data_try/feature_extract_2cnn_old/Model.h5",
     )
     model = Model(model_org, "/home/ubuntu/RAIDS/chen_data_try/feature_extract_2cnn/data/X_train_gray_diff2_mean.npy")
 
@@ -284,4 +299,5 @@ if __name__ == "__main__":
         if cnt % 10 == 0:
             print("EPOCH completed by %", (cnt / 40) * 100)
 
-    df_all.to_csv("accuracy_file_f_e_predict_a_consecutive.csv")
+    # df_all.to_csv("accuracy_file_f_e_predict_abrupt_consecutive.csv")
+    df_all.to_csv("accuracy_file_f_e_predict_directed_consecutive.csv")

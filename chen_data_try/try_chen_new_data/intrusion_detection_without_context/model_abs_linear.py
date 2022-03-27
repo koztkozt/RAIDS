@@ -10,8 +10,8 @@ class mynet(nn.Module):
 
     def __init__(self):
         super(mynet, self).__init__()
-        self.fc1 = nn.Linear(1, 2)
-        self.fc2 = nn.Linear(2, 2)
+        self.fc1 = nn.Linear(1, 3)
+        self.fc2 = nn.Linear(3, 2)
 
 
     def forward(self, *inp):

@@ -14,12 +14,11 @@ import copy
 from data_extraction_ABS import *
 from model_abs_linear import *
 
-
 from time import gmtime, strftime
 
 print("intrusion_detection_start: ", strftime("%Y-%m-%d %H:%M:%S", gmtime()))
 
-test_dataset = intrusion_data(csv_file='interpolated_test_4280_a_consecutive_0p2_0p9_batch.csv', root_dir='./data', cs=1,
+test_dataset = intrusion_data(csv_file='interpolated_attack_a_directive_0p25_1_10702to24371_part1_4103.csv', root_dir='./data', cs=1,
                               transform=transforms.Compose(
                                   [transforms.Resize(256),
                                    transforms.RandomResizedCrop(224),
@@ -44,7 +43,7 @@ def accuracy(act , out):
 
 
 net.eval()
-net = torch.load('saved_models_consecutive_0p25-1/epoch_2.pt')
+net = torch.load('saved_models_consecutive/epoch_7.pt')
 
 loss1 = 0
 finale = 0

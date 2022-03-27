@@ -1,4 +1,5 @@
-from __future__ import print_function, division
+# from __future__ import print_function, division
+from sklearn.model_selection import train_test_split
 import os
 import torch
 import pandas as pd
@@ -25,12 +26,11 @@ from keras.models import load_model
 from keras.preprocessing.image import load_img, img_to_array
 from skimage.exposure import rescale_intensity
 
-import time
+from sklearn.metrics import confusion_matrix, accuracy_score, precision_score, recall_score
+
 
 class Model(object):
-    def __init__(self,
-                 model_path,
-                 X_train_mean_path):
+    def __init__(self, model_path, X_train_mean_path):
 
         self.model = model_path
         self.X_mean = np.load(X_train_mean_path)
@@ -58,9 +58,7 @@ class Model(object):
         else:
             img = img1 - self.img0
             img = rescale_intensity(img, in_range=(-255, 255), out_range=(0, 255))
-
             img = np.array(img, dtype=np.uint8)  # to replicate initial model
-
             self.state.append(img)
             self.img0 = img1
 
@@ -68,166 +66,232 @@ class Model(object):
             X = X[:, :, ::-1]
 
             X = np.expand_dims(X, axis=0)
-            X = X.astype('float32')
+            X = X.astype("float32")
             X -= self.X_mean
             X /= 255.0
 
             return self.model.predict(X)[0]
 
-# face_dataset = intrusion_data(csv_file='interpolated_2188to16447_attack_a_0p2_0p9_9982.csv',root_dir='/home/pi/new_try_raspberry_pi--/chen_data_try/chen_new_try/chen_new_data',cs=1,transform=transforms.Compose([transforms.Resize(256),transforms.RandomResizedCrop(224),transforms.ToTensor()]))
-# test_dataset=intrusion_data(csv_file='interpolated_2188to16447_attack_a_0p2_0p9_4280.csv',root_dir='/home/pi/new_try_raspberry_pi--/chen_data_try/chen_new_try/chen_new_data',cs=1,transform=transforms.Compose([transforms.Resize(256),transforms.RandomResizedCrop(224),transforms.ToTensor()]))
-face_dataset = intrusion_data(csv_file='interpolated_2188to16447_attack_a_0p2_0p9_9982.csv',root_dir='/home/ubuntu/RAIDS/chen_data_try/try_chen_new_data/attack_csv/chen',cs=1,transform=transforms.Compose([transforms.Resize(256),transforms.RandomResizedCrop(224),transforms.ToTensor()]))
-test_dataset=intrusion_data(csv_file='interpolated_2188to16447_attack_a_0p2_0p9_4280.csv',root_dir='/home/ubuntu/RAIDS/chen_data_try/try_chen_new_data/attack_csv/chen',cs=1,transform=transforms.Compose([transforms.Resize(256),transforms.RandomResizedCrop(224),transforms.ToTensor()]))
 
-dataloader = DataLoader(face_dataset, batch_size=1, shuffle=False)
-test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
-
-config = TestConfig()
-
-ch = config.num_channels
-row = config.img_height
-col = config.img_width
-# model_org = create_comma_model_large_dropout(row, col, ch, load_weights=True)
-model_org = create_comma_model_large_dropout(row, col, ch, load_weights=False)
-
-model = Model(model_org,
-              "data/X_train_gray_diff2_mean.npy")
-
-net = mynet()
-
-criterion = F.nll_loss
-optimizer = optim.Adam(net.parameters(), lr=0.01)
-
-def accuracy(act , out):
-    wrong1=0
-    for a,f in zip(act,out):
-        if a!=f:
-            wrong1+=1
+def myaccuracy(act, out):
+    wrong1 = 0
+    for a, f in zip(act, out):
+        if a != f:
+            wrong1 += 1
     return wrong1
 
-epochs = 40
-cnt = 0
-for iter_x in range(epochs):
-    inter = .10
-    loss1 = 0
-    finale = 0
-    # train_loss = 0
-    finale_1 = 0
-    finale_0 = 0
-    get_1 = 0
-    get_0 = 0
-    target_1_indices_1 = 0
-    target_1_indices_0 = 0
-    target_0_indices_1 = 0
-    target_0_indices_0 = 0
-    for i_batch, sample in enumerate(dataloader):  # for each training i_batch
 
-        if i_batch / len(dataloader) > inter:
-            print('completed %epoch ', inter)
-            inter += .10
+if __name__ == "__main__":
 
-        data = []
-        result = []
-        print('sample',sample)
-        for sm in sample:
-            imag, dat, res = sm
-            data = dat
-            result.append(res)
+    # face_dataset = intrusion_data(csv_file='interpolated_random_a_10702to24371_part1_0p2to0p9_9569.csv',root_dir='/home/pi/new_try_raspberry_pi--/chen_data_try/chen_new_try/chen_new_data',
+    #                               cs=1,transform=transforms.Compose([transforms.Resize(256),transforms.RandomResizedCrop(224),transforms.ToTensor()]))
+    # test_dataset=intrusion_data(csv_file='interpolated_random_a_10702to24371_part1_0p2to0p9_4103.csv',root_dir='/home/pi/new_try_raspberry_pi--/chen_data_try/chen_new_try/chen_new_data',cs=1,
+    #                             transform=transforms.Compose([transforms.Resize(256),transforms.RandomResizedCrop(224),transforms.ToTensor()]))
+    # importing the dataset csv with attacks
+    # dataset = pd.read_csv(
+    #     "/home/ubuntu/RAIDS/chen_data_try/try_chen_new_data/attack_csv/chen_new_all_abrupt_intrusion.csv"
+    # )
+    dataset = pd.read_csv(
+        "/home/ubuntu/RAIDS/chen_data_try/try_chen_new_data/attack_csv/chen_new_all_directed_intrusion.csv"
+    )
+    # split the dataset into training and test. needs to be in order cos the images are substracted
+    face_dataset, test_dataset = train_test_split(dataset, test_size=0.3, shuffle=False, random_state=56)
+    face_dataset = intrusion_data(
+        face_dataset,
+        root_dir="/home/ubuntu/RAIDS/dataset/chen_new/data",
+    )
+    test_dataset = intrusion_data(
+        test_dataset,
+        root_dir="/home/ubuntu/RAIDS/dataset/chen_new/data",
+    )
 
-        for img in imag:
-            preds = model.predict(img)
-            preds = preds.astype('float').reshape(-1)
-            preds = preds[0]
-        target = torch.stack(result)
-        target = target.view(-1)
+    # It represents a Python iterable over a datase
+    dataloader = DataLoader(face_dataset, batch_size=1, shuffle=False)
+    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
-        final_vars = []
-        final_vars = torch.FloatTensor([[[abs(data-preds)]]])
-        x = net(*final_vars)
-        values, indices = x.max(1)
-        loss = criterion(x, Variable(target))
-        loss.backward()
-        optimizer.step()
-        net.zero_grad()
+    # see config.py
+    config = TestConfig()
+    ch = config.num_channels
+    row = config.img_height
+    col = config.img_width
 
-        # if(i_batch>100):
-        #     break
+    # import CNN Model for phase 1 to extract road context
+    model_org = create_comma_model_large_dropout(
+        row,
+        col,
+        ch,
+        load_weights=True,
+        path="/home/ubuntu/RAIDS/chen_data_try/feature_extract_2cnn/Model_0.0137loss.h5",
+    )
+    model = Model(model_org, "/home/ubuntu/RAIDS/chen_data_try/feature_extract_2cnn/data/X_train_gray_diff2_mean.npy")
 
-    # &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&TESTING &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+    # Neural networks can be constructed using the torch.nn package.
+    net = mynet()
+    criterion = F.nll_loss  # The negative log likelihood loss.
+    optimizer = optim.Adam(net.parameters(), lr=0.01)  # Implements Adam algorithm.
 
-    for i_batch, sample in enumerate(test_loader):
+    epochs = 40
+    cnt = 0
+    df_all = pd.DataFrame(columns=["TN", "FP", "FN", "TP", "Accuracy", "Precision", "Recall"])
 
+    for iter_x in range(epochs):
+        inter = 0.01
+        loss1 = 0
+        finale = 0
+        # train_loss = 0
+        finale_1 = 0
+        finale_0 = 0
+        get_1 = 0
+        get_0 = 0
+        target_1_indices_1 = 0
+        target_1_indices_0 = 0
+        target_0_indices_1 = 0
+        target_0_indices_0 = 0
 
-        data = []
-        result = []
-        for sm in sample:
-            imag, dat, res = sm
-            data = dat
-            result.append(res)
+        print("Length of dataloader :", len(dataloader))
+        for i_batch, sample in enumerate(dataloader):  # for each training i_batch
 
-        for img in imag:
-            preds = model.predict(img)
-            preds = preds.astype('float').reshape(-1)
-            preds = preds[0]
+            if i_batch / len(dataloader) > inter:
+                print("epoch: ", iter_x, " completed: ", inter * 100, "%")
+                inter += 0.01
 
-        final_vars = torch.FloatTensor([[[abs(data - preds)]]])
-        target = torch.stack(result)
-        target = target.view(-1)
+            data = []
+            result = []
+            for sm in sample:
+                imag, dat, res = sm
+                data = dat
+                result.append(res)
 
-        x = net(*final_vars)
-        values, indices = x.max(1)
-        print("target_indices: ", target, indices.data)
-        loss1 += accuracy(target, indices.data)
-        finale += 1
+            target = torch.stack(result)
+            target = target.view(-1)
 
-        for Target, Indices in zip(target, indices.data):
-            if Target == 1:
-                finale_1 += 1
-            else:
-                finale_0 += 1
-            if Indices == 1:
-                get_1 += 1
-            else:
-                get_0 += 1
-            if Target == 1 and Indices == 1:
-                target_1_indices_1 += 1
-            elif Target == 1 and Indices == 0:
-                target_1_indices_0 += 1
-            elif Target == 0 and Indices == 0:
-                target_0_indices_0 += 1
-            elif Target == 0 and Indices == 1:
-                target_0_indices_1 += 1
-        #
-        # if(i_batch>100):
-        #     break
+            # prediction from stage 1 model
+            for img in imag:
+                preds = model.predict(img)
+                preds = preds.astype("float").reshape(-1)
+                preds = preds[0]
 
-    acc = 1.0 - (loss1 / finale)
-    acc11 = target_1_indices_1 / (target_1_indices_1 + target_1_indices_0)
-    print('accuracy=', acc)
-    print('accuracy11=', acc11)
-    print("finale_1_0_get_1_0: ", finale_1, finale_0, get_1, get_0)
-    print("target_indices11,10,00,01: ", target_1_indices_1, target_1_indices_0, target_0_indices_0, target_0_indices_1)
+            final_vars = []
+            final_vars = torch.FloatTensor([[[abs(data - preds)]]])
 
-    file2write = open("accuracy_file_f_e_predict_a_consecutive.txt", 'a')
-    file2write.write("accuracy= " + str(acc) + "\n")
-    file2write.write("accuracy1111= " + str(acc11) + "\n")
+            # forward + backward + optimize
+            x = net(*final_vars)
+            values, indices = x.max(1)
+            loss = criterion(x, Variable(target))  # The negative log likelihood loss.
+            loss.backward()
+            optimizer.step()
+            # zero the parameter gradients
+            net.zero_grad()
 
-    file2write.write(
-        "finale_1_0_get_1_0= " + "\n" + str(finale_1) + "\n" + str(finale_0) + "\n" + str(get_1) + "\n" + str(
-            get_0) + "\n")
-    file2write.write(
-        "target_indices11,10,00,01= " + "\n" + str(target_1_indices_1) + "\n" + str(target_1_indices_0) + "\n" + str(
-            target_0_indices_0) + "\n" + str(target_0_indices_1) + "\n")
-    file2write.close()
+            # if(i_batch>10):
+            #     break
 
-    filenm = 'epoch_' + str(cnt) + '.pt'
-    torch.save(net, os.path.join(('saved_consecutive_models'), filenm))
+        print("TESTING")
+        # &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&TESTING &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
-    cnt = cnt + 1
-    if (cnt % 10 == 0):
-        print('EPOCH completed by %', (cnt / 40) * 100)
+        y_pred = []
+        y_true = []
 
+        for i_batch, sample in enumerate(test_loader):
 
+            data = []
+            result = []
+            for sm in sample:
+                imag, dat, res = sm
+                data = dat
+                result.append(res)
 
+            for img in imag:
+                preds = model.predict(img)
+                preds = preds.astype("float").reshape(-1)
+                preds = preds[0]
 
+            final_vars = torch.FloatTensor([[[abs(data - preds)]]])
+            target = torch.stack(result)
+            target = target.view(-1)
+            y_true.extend(target)
 
+            x = net(*final_vars)
+            values, indices = x.max(1)  # takes the max over dimension 1 and returns two values.
+            # print("target_indices: ", target, indices.data)
+            y_pred.extend(indices.data)
+
+            # # number of wrong prediction
+            # loss1 += myaccuracy(target, indices.data)
+            # # number of test cases
+            # finale += 1
+
+            # for Target, Indices in zip(target, indices.data):
+            #     if Target == 1: # number of test cases with attack
+            #         finale_1 += 1
+            #     else:
+            #         finale_0 += 1
+            #     if Indices == 1: # number of test cases predicted under attack
+            #         get_1 += 1
+            #     else:
+            #         get_0 += 1
+            #     if Target == 1 and Indices == 1: # True positive
+            #         target_1_indices_1 += 1
+            #     elif Target == 1 and Indices == 0: # False Negative
+            #         target_1_indices_0 += 1
+            #     elif Target == 0 and Indices == 0:  # True negative
+            #         target_0_indices_0 += 1
+            #     elif Target == 0 and Indices == 1: # False positive
+            #         target_0_indices_1 += 1
+
+            # if(i_batch>10):
+            #     break
+        # Build confusion matrix
+        cf_matrix = confusion_matrix(y_true, y_pred).flatten()
+        accuracy = accuracy_score(y_true, y_pred)
+        precision = precision_score(y_true, y_pred)
+        recall = recall_score(y_true, y_pred)
+        print("TN, FP, FN, TP :", cf_matrix)
+        print("accuracy :", accuracy)
+
+        # Initialize a blank dataframe and keep adding
+        df = pd.DataFrame(columns=["TN", "FP", "FN", "TP", "Accuracy", "Precision", "Recall"])
+        print(type(cf_matrix))
+        df.loc[iter_x] = cf_matrix.tolist() + [accuracy, precision, recall]
+        df["Total_Actual_Neg"] = df["TN"] + df["FP"]
+        df["Total_Actual_Pos"] = df["FN"] + df["TP"]
+        df["Total_Pred_Neg"] = df["TN"] + df["FN"]
+        df["Total_Pred_Pos"] = df["FP"] + df["TP"]
+        df["TP_Rate"] = df["TP"] / df["Total_Actual_Pos"]  # Recall
+        df["FP_Rate"] = df["FP"] / df["Total_Actual_Neg"]
+        df["TN_Rate"] = df["TN"] / df["Total_Actual_Neg"]
+        df["FN_Rate"] = df["FN"] / df["Total_Actual_Pos"]
+        df_all = pd.concat([df_all, df])
+        print(df_all.tail())
+
+        # # confusion matrix for a binary classifier
+        # acc = 1.0 - (loss1 / finale)
+        # acc11 = target_1_indices_1 / (target_1_indices_1 + target_1_indices_0)
+        # print('Accuracy=', acc) # overall accuracy (TP+TN)/total
+        # print('True Positive Rate=', acc11) # True Positive Rate TP/actual yes
+        # print("finale_1_0_get_1_0: ", finale_1, finale_0, get_1, get_0)  # Actual=Yes, Actual=No, Predicted = Yes, Predicted = No
+        # # True Positive, False Negative, True Negative, False Positive
+        # print("target_indices11,10,00,01: ", target_1_indices_1, target_1_indices_0, target_0_indices_0, target_0_indices_1)
+
+        # # Initialize a blank dataframe and keep adding
+        # file2write = open("accuracy_file_f_e_predict_a_consecutive.txt", 'a')
+        # file2write.write("accuracy= " + str(acc) + "\n")
+        # file2write.write("accuracy1111= " + str(acc11) + "\n")
+
+        # file2write.write(
+        #     "finale_1_0_get_1_0= " + "\n" + str(finale_1) + "\n" + str(finale_0) + "\n" + str(get_1) + "\n" + str(
+        #         get_0) + "\n")
+        # file2write.write(
+        #     "target_indices11,10,00,01= " + "\n" + str(target_1_indices_1) + "\n" + str(target_1_indices_0) + "\n" + str(
+        #         target_0_indices_0) + "\n" + str(target_0_indices_1) + "\n")
+        # file2write.close()
+
+        filenm = "epoch_" + str(cnt) + ".pt"
+        torch.save(net, os.path.join(("saved_consecutive_models"), filenm))
+
+        cnt = cnt + 1
+        if cnt % 10 == 0:
+            print("EPOCH completed by %", (cnt / 40) * 100)
+
+    # df_all.to_csv("accuracy_file_f_e_predict_a_abrupt)
+    df_all.to_csv("accuracy_file_f_e_predict_directed.csv")

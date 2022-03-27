@@ -42,13 +42,29 @@ if __name__ == "__main__":
     #                                 transforms.ToTensor()]))
 
     # importing the dataset csv with attacks
+    # dataset = pd.read_csv(
+    #     "/home/ubuntu/RAIDS/chen_data_try/try_chen_old_data/attack_csv/chen_old_all_abrupt_intrusion.csv"
+    # )
     dataset = pd.read_csv(
-        "/home/ubuntu/RAIDS/chen_data_try/try_chen_old_data/attack_csv/chen_old_all_abrupt_intrusion.csv"
+        "/home/ubuntu/RAIDS/chen_data_try/try_chen_old_data/attack_csv/chen_old_all_directed_intrusion.csv"
     )
+
     # split the dataset into training and test. needs to be in order cos the images are substracted
     face_dataset, test_dataset = train_test_split(dataset, test_size=0.3, shuffle=False, random_state=56)
-    face_dataset = intrusion_data(face_dataset, root_dir="/home/ubuntu/RAIDS/dataset/chen_old/data")
-    test_dataset = intrusion_data(test_dataset, root_dir="/home/ubuntu/RAIDS/dataset/chen_old/data")
+    face_dataset = intrusion_data(
+        face_dataset,
+        root_dir="/home/ubuntu/RAIDS/dataset/chen_old/data",
+        transform=transforms.Compose(
+            [transforms.Resize(256), transforms.RandomResizedCrop(224), transforms.ToTensor()]
+        ),
+    )
+    test_dataset = intrusion_data(
+        test_dataset,
+        root_dir="/home/ubuntu/RAIDS/dataset/chen_old/data",
+        transform=transforms.Compose(
+            [transforms.Resize(256), transforms.RandomResizedCrop(224), transforms.ToTensor()]
+        ),
+    )
 
     # out=[]
 
@@ -87,7 +103,7 @@ if __name__ == "__main__":
         for i_batch, sample in enumerate(dataloader):  # for each training i_batch
 
             if i_batch / len(dataloader) > inter:
-                print("completed %epoch ", inter)
+                print("epoch: ", iter_x, " completed: ", inter * 100, "%")
                 inter += 0.01
 
             data = []
@@ -113,8 +129,8 @@ if __name__ == "__main__":
             optimizer.step()
             net.zero_grad()
 
-            if i_batch > 10:
-                break
+            # if i_batch > 10:
+            #     break
 
         # &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&TESTING &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
         print("test_start: ", strftime("%Y-%m-%d %H:%M:%S", gmtime()))
@@ -240,4 +256,5 @@ if __name__ == "__main__":
 
         print("test_end: ", strftime("%Y-%m-%d %H:%M:%S", gmtime()))
 
-    df_all.to_csv("accuracy_file_f_e_predict_a_consecutive.csv")
+    # df_all.to_csv("accuracy_file_f_e_predict_a_abrupt.csv")
+    df_all.to_csv("accuracy_file_f_e_predict_a_directed.csv")
